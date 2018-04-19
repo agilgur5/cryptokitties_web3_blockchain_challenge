@@ -50,7 +50,8 @@ class App extends Component {
     loading: true,
     invalidError: false,
     apiError: false,
-    tokens: []
+    tokens: [],
+    txns: []
   }
   componentDidMount = () => {
     this._handleNewAddress() // get kitties for default account on mount
@@ -94,12 +95,20 @@ class App extends Component {
           console.error(err)
           alert(err.message)
         }
-        console.log(result) // todo: change state
+        console.log(result)
+        // move the gifted kitty to the transaction list
+        // the immutability can probably be made more efficient
+        this.setState((state) => ({
+          txns: state.txns.concat({hash: result, token}),
+          tokens: state.tokens.filter((tk) => tk.id !== token.id)
+        }))
       }
     )
   }
   render = () => {
-    let {userAddress, loading, invalidError, apiError, tokens} = this.state
+    let {userAddress, loading, invalidError, apiError, tokens,
+      txns} = this.state
+    let tkViewerProps = {userAddress, tokens, giftKitty: this.giftKitty}
     return <div>
       Search by User Address:
       <br />
@@ -111,29 +120,64 @@ class App extends Component {
         ? 'CryptoKitties API call failed! Maybe try typing again?'
       : invalidError
         ? 'Invalid Address'
-      : tokens.length > 0
-        ? <div>
-          Showing tokens for this address:
-          <ul>
-            {tokens.map((token) =>
-              <li key={token.id}>
-                {JSON.stringify(token)}
-                <br /><br />
-                {/* technically, one can transfer on behalf of other entities,
-                    but that's outside the scope, so not handling that case */}
-                {userAddress === web3.eth.accounts[0]
-                  ? <button onClick={this.giftKitty(token)}>
-                    Gift this Kitty
-                  </button>
-                  : null}
-                <br /><br />
-              </li>
-            )}
-          </ul>
+      : <div>
+        <TokensViewer {...tkViewerProps} />
+        <br />
+        {/* only show transactions for your address (for now?) */}
+        {userAddress === web3.eth.accounts[0]
+         ? <div>
+          <hr />
+          <br />
+          <TxnsViewer txns={txns} />
         </div>
-        : 'No tokens available for this address.'}
+        : null}
+      </div>}
     </div>
   }
+}
+
+function TokensViewer ({tokens, userAddress, giftKitty}) {
+  return tokens.length > 0
+    ? <div> Showing tokens for this address:
+      <ul>
+        {tokens.map((token) =>
+          <li key={token.id}>
+            {JSON.stringify(token)}
+            <br /><br />
+            {/* technically, one can transfer on behalf of other entities,
+                but that's outside the scope, so not handling that case */}
+            {userAddress === web3.eth.accounts[0]
+              ? <button onClick={giftKitty(token)}>
+                Gift this Kitty
+              </button>
+              : null}
+            <br /><br />
+          </li>
+        )}
+      </ul>
+    </div>
+    : <span>No tokens available for this address.</span>
+}
+
+function TxnsViewer ({txns}) {
+  return txns.length > 0
+    ? <div> Showing transactions for your address:
+      <ul>
+        {txns.map(({hash, token, status}) =>
+          <li key={hash}>
+            {JSON.stringify(token)}
+            <br /><br />
+            {status === 'failed'
+              ? 'This transaction failed'  // maybe add a retry at some point
+            : status === 'success'
+              ? 'This transaction succeeded!'
+            : 'This transaction is pending...'}
+            <br /><br />
+          </li>
+        )}
+      </ul>
+    </div>
+    : <span>No transactions available for your address.</span>
 }
 
 const element = document.createElement('div')
