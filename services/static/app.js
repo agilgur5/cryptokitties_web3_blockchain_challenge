@@ -47,21 +47,30 @@ function askForAddress (addr) {
 class App extends Component {
   state = {
     userAddress: web3.eth.accounts[0], // first account is default
-    loading: web3.eth.accounts[0] ? true : false, // might not have an account
-    error: false,
+    loading: true,
+    invalidError: false,
+    apiError: false,
     tokens: []
   }
   componentDidMount = () => {
-    // don't do anything if no default address
-    if (!this.state.userAddress) { return }
     this._handleNewAddress() // get kitties for default account on mount
   }
   _handleNewAddress = () => {
+    // default
+    this.setState({
+      loading: true, invalidError: false, apiError: false, tokens: []
+    })
+    // check if address is even valid, early return if not
+    if (!web3.isAddress(this.state.userAddress)) {
+      this.setState({loading: false, invalidError: true})
+      return
+    }
+
     getKitties(this.state.userAddress)
       .catch((err) => {
         console.error('CryptoKitties API call failed!')
         alert('CryptoKitties API call failed!') // leave error handling to user
-        this.setState({loading: false, error: true})
+        this.setState({loading: false, apiError: true})
       })
       .then((result) => {
         console.log(result)
@@ -70,10 +79,7 @@ class App extends Component {
   }
   handleChange = (ev) => {
     let value = ev.target.value // save event before it changes
-    this.setState(
-      {userAddress: value, loading: true, error: false},
-      this._handleNewAddress
-    )
+    this.setState({userAddress: value}, this._handleNewAddress)
   }
   giftKitty = (token) => () => {
     let to
@@ -93,13 +99,19 @@ class App extends Component {
     )
   }
   render = () => {
-    let {userAddress, loading, error, tokens} = this.state
+    let {userAddress, loading, invalidError, apiError, tokens} = this.state
     return <div>
       Search by User Address:
       <br />
       <input type='text' value={userAddress} onChange={this.handleChange} />
       <br />
-      {tokens.length > 0
+      {loading
+        ? 'Loading...'
+      : apiError
+        ? 'CryptoKitties API call failed! Maybe try typing again?'
+      : invalidError
+        ? 'Invalid Address'
+      : tokens.length > 0
         ? <div>
           Showing tokens for this address:
           <ul>
@@ -119,11 +131,7 @@ class App extends Component {
             )}
           </ul>
         </div>
-        : loading
-          ? 'Loading...'
-          : error
-            ? 'CryptoKitties API call failed! Maybe try typing again?'
-            : 'No tokens available for this address.'}
+        : 'No tokens available for this address.'}
     </div>
   }
 }
