@@ -47,11 +47,13 @@ function askForAddress (addr) {
 class App extends Component {
   state = {
     userAddress: web3.eth.accounts[0], // first account is default
-    loading: true,
+    loading: web3.eth.accounts[0] ? true : false, // might not have an account
     error: false,
     tokens: []
   }
   componentDidMount = () => {
+    // don't do anything if no default address
+    if (!this.state.userAddress) { return }
     this._handleNewAddress() // get kitties for default account on mount
   }
   _handleNewAddress = () => {
@@ -70,7 +72,7 @@ class App extends Component {
     let value = ev.target.value // save event before it changes
     this.setState(
       {userAddress: value, loading: true, error: false},
-      _this._handleNewAddress
+      this._handleNewAddress
     )
   }
   giftKitty = (token) => () => {
@@ -80,7 +82,7 @@ class App extends Component {
     } catch (err) {
       return // if canceled, do nothing
     }
-    contractInst.transfer(to, token.id, {from: this.state.userAddress},
+    contractInst.transfer(to, token.id, {from: web3.eth.accounts[0]},
       (err, result) => {
         if (err) {
           console.error(err)
@@ -105,7 +107,13 @@ class App extends Component {
               <li key={token.id}>
                 {JSON.stringify(token)}
                 <br /><br />
-                <button onClick={this.giftKitty(token)}>Gift this Kitty</button>
+                {/* technically, one can transfer on behalf of other entities,
+                    but that's outside the scope, so not handling that case */}
+                {userAddress === web3.eth.accounts[0]
+                  ? <button onClick={this.giftKitty(token)}>
+                    Gift this Kitty
+                  </button>
+                  : null}
                 <br /><br />
               </li>
             )}
