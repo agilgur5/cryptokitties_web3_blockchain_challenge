@@ -58,6 +58,18 @@ class App extends Component {
       _this._handleNewAddress
     )
   }
+  giftKitty = (token) => () => {
+    let to = this.state.userAddress // todo: ask for an address
+    contractInst.transfer(to, token.id, {from: this.state.userAddress},
+      (err, result) => {
+        if (err) {
+          console.error(err)
+          alert(err)
+        }
+        console.log(result) // todo: change state
+      }
+    )
+  }
   render = () => {
     let {userAddress, loading, error, tokens} = this.state
     return <div>
@@ -70,7 +82,11 @@ class App extends Component {
           Showing tokens for this address:
           <ul>
             {tokens.map((token) =>
-              <li key={token.id}>{JSON.stringify(token)}</li>
+              <li key={token.id}>
+                {JSON.stringify(token)}
+                <br />
+                <button onClick={this.giftKitty(token)}>Gift this Kitty</button>
+              </li>
             )}
           </ul>
         </div>
