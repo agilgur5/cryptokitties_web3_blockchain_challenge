@@ -29,6 +29,21 @@ function getKitties (address) {
   ).then((resp) => resp.json())
 }
 
+// just a simple prompt that returns an address if it gets one or throws
+const promptText = 'What\'s the address you want to gift this kitten to?'
+function askForAddress (addr) {
+  let to = window.prompt(promptText, addr) // who needs modals anyway
+  // if we were using a modal, we shouldn't allow submission until it's valid
+  // since we're not, do some post-submission input validation
+  if (to == null) { // cancel was clicked
+    throw new Error('prompt cancelled')
+  } else if (!web3.isAddress(to)) {
+    alert('Invalid address, try again')
+    return askForAddress(to)
+  }
+  return to
+}
+
 class App extends Component {
   state = {
     userAddress: web3.eth.accounts[0], // first account is default
@@ -59,12 +74,17 @@ class App extends Component {
     )
   }
   giftKitty = (token) => () => {
-    let to = this.state.userAddress // todo: ask for an address
+    let to
+    try {
+      to = askForAddress()
+    } catch (err) {
+      return // if canceled, do nothing
+    }
     contractInst.transfer(to, token.id, {from: this.state.userAddress},
       (err, result) => {
         if (err) {
           console.error(err)
-          alert(err)
+          alert(err.message)
         }
         console.log(result) // todo: change state
       }
@@ -84,8 +104,9 @@ class App extends Component {
             {tokens.map((token) =>
               <li key={token.id}>
                 {JSON.stringify(token)}
-                <br />
+                <br /><br />
                 <button onClick={this.giftKitty(token)}>Gift this Kitty</button>
+                <br /><br />
               </li>
             )}
           </ul>
