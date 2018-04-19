@@ -31,15 +31,16 @@ function getKitties (address) {
 
 class App extends Component {
   state = {
-    userAddress: '',
-    loading: false,
+    userAddress: web3.eth.accounts[0], // first account is default
+    loading: true,
     error: false,
     tokens: []
   }
-  handleChange = (ev) => {
-    let value = ev.target.value // save event before it changes
-    this.setState({userAddress: value, loading: true, error: false})
-    getKitties(value)
+  componentDidMount = () => {
+    this._handleNewAddress() // get kitties for default account on mount
+  }
+  _handleNewAddress = () => {
+    getKitties(this.state.userAddress)
       .catch((err) => {
         console.error('CryptoKitties API call failed!')
         alert('CryptoKitties API call failed!') // leave error handling to user
@@ -49,6 +50,13 @@ class App extends Component {
         console.log(result)
         this.setState({tokens: result.kitties, loading: false})
       })
+  }
+  handleChange = (ev) => {
+    let value = ev.target.value // save event before it changes
+    this.setState(
+      {userAddress: value, loading: true, error: false},
+      _this._handleNewAddress
+    )
   }
   render = () => {
     let {userAddress, loading, error, tokens} = this.state
