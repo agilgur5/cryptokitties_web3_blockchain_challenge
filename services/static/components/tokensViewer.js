@@ -1,5 +1,7 @@
 import React from 'react'
 
+import Kitty from './kitty.js'
+
 import { getWeb3 } from '../init/web3Interface.js'
 
 function tokenTxnFilter (txns) {
@@ -16,7 +18,7 @@ function TokensViewer ({userAddress, tokens, txns, giftKitty}) {
       <ul>
         {filtered.map((token) =>
           <li key={token.id}>
-            {JSON.stringify(token)}
+            <Kitty kitty={token} />
             <br /><br />
             {/* technically, one can transfer on behalf of other entities,
                 but that's outside the scope, so not handling that case */}

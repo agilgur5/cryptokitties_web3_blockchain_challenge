@@ -1,5 +1,7 @@
 import React from 'react'
 
+import Kitty from './kitty.js'
+
 function TxnsViewer ({txns}) {
   let txnKeys = Object.keys(txns)
   return txnKeys.length > 0
@@ -8,7 +10,7 @@ function TxnsViewer ({txns}) {
         {txnKeys.map((txnKey) => {
           let {hash, token, status} = txns[txnKey]
           return <li key={hash}>
-            {JSON.stringify(token)}
+            <Kitty kitty={token} />
             <br /><br />
             {status === 'failure'
               ? 'This transaction failed'  // maybe add a retry at some point
