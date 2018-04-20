@@ -59,6 +59,10 @@ class App extends Component {
   }
   componentDidMount = () => {
     this._handleNewAddress() // get kitties for default account on mount
+    // get status/receipts for any txns that don't have them
+    Object.keys(this.state.txns).filter((tkId) => {
+      return !this.state.txns[tkId].status
+    }).forEach((tkId) => this._longPoll(this.state.txns[tkId]))
   }
   _handleNewAddress = () => {
     // default
@@ -142,6 +146,7 @@ class App extends Component {
       </div>}
     </div>
   }
+
   _longPoll = (txn) => {
     web3.eth.getTransactionReceipt(txn.hash, (err, result) => {
       if (err) {
@@ -149,6 +154,7 @@ class App extends Component {
         // don't return and just retry
         // ideally should check what kind of error was given
       }
+      console.log(result)
       // null result means pending
       if (!result) {
         // ideally should exponential jitter this
