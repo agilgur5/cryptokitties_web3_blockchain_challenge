@@ -1,22 +1,15 @@
 import React, { Component } from 'react'
 import ReactDOM from 'react-dom'
 
-import Web3 from 'web3'
+import TokensViewer from './components/tokensViewer.js'
+import TxnsViewer from './components/txnsViewer.js'
 
-import { address, abi } from './contract.js'
+import { init, getWeb3, getContractInst } from './init/web3Interface.js'
 
-let web3 = null
-if (typeof window.web3 != 'undefined'){
-  console.log('Using web3 detected from external source (e.g. MetaMask, Mist)')
-  web3 = new Web3(window.web3.currentProvider)
-} else {
-  // notify user of the error
-  alert('No web3 Provider detected... exiting...')
-  // early exit
-  throw new Error('No web3 Provider detected... exiting...')
-}
-const contract = web3.eth.contract(abi)
-const contractInst = contract.at(address)
+// instantiate web3 and the contract
+init()
+let web3 = getWeb3()
+let contractInst = getContractInst()
 
 /* get Kitties from the API because tokensOfOwner contract method is too slow
    to ever work */
@@ -172,60 +165,6 @@ class App extends Component {
   }
 }
 
-function tokenTxnFilter (txns) {
-  return (token) => {
-    return !((token.id in txns) && txns[token.id].status != 'failure')
-  }
-}
-
-function TokensViewer ({userAddress, tokens, txns, giftKitty}) {
-  let filtered = tokens.filter(tokenTxnFilter(txns))
-  return filtered.length > 0
-    ? <div> Showing tokens for this address:
-      <ul>
-        {filtered.map((token) =>
-          <li key={token.id}>
-            {JSON.stringify(token)}
-            <br /><br />
-            {/* technically, one can transfer on behalf of other entities,
-                but that's outside the scope, so not handling that case */}
-            {userAddress === web3.eth.accounts[0]
-              ? <button onClick={giftKitty(token)}>
-                Gift this Kitty
-              </button>
-              : null}
-            <br /><br />
-          </li>
-        )}
-      </ul>
-    </div>
-    : <span>No tokens available for this address.</span>
-    // ^maybe show a different phrase if pending tokens?
-    // "available" is still an accurate word in any case
-}
-
-function TxnsViewer ({txns}) {
-  let txnKeys = Object.keys(txns)
-  return txnKeys.length > 0
-    ? <div> Showing transactions for your address:
-      <ul>
-        {txnKeys.map((txnKey) => {
-          let {hash, token, status} = txns[txnKey]
-          return <li key={hash}>
-            {JSON.stringify(token)}
-            <br /><br />
-            {status === 'failure'
-              ? 'This transaction failed'  // maybe add a retry at some point
-            : status === 'success'
-              ? 'This transaction succeeded!'
-            : 'This transaction is pending...'}
-            <br /><br />
-          </li>
-        })}
-      </ul>
-    </div>
-    : <span>No transactions available for your address.</span>
-}
 
 const element = document.createElement('div')
 document.body.appendChild(element)
