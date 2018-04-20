@@ -46,7 +46,7 @@ function askForAddress (addr) {
 
 // initialize localStorage if it doesn't exist
 if (!window.localStorage.getItem('txns')) {
-  window.localStorage.setItem('txns', JSON.stringify([]))
+  window.localStorage.setItem('txns', JSON.stringify({}))
 }
 class App extends Component {
   state = {
@@ -95,27 +95,26 @@ class App extends Component {
     }
     contractInst.transfer(to, token.id, {from: web3.eth.accounts[0]},
       (err, result) => {
+        // transfer was rejected
         if (err) {
           console.error(err)
           alert(err.message)
+          return
         }
         console.log(result)
         // set the new transactions
-        window.localStorage.setItem('txns',
-          JSON.stringify(this.state.txns.concat({hash: result, token})))
-        // move the gifted kitty to the transaction list
-        // the immutability can probably be made more efficient
-        this.setState((state) => ({
-          txns: state.txns.concat({hash: result, token}),
-          tokens: state.tokens.filter((tk) => tk.id !== token.id)
-        }))
+        this.state.txns[token.id] = {hash: result, token}
+        window.localStorage.setItem('txns', JSON.stringify(this.state.txns))
+        // yea preferably this should be done with immutability-helper, but
+        // we're not using sCU and it won't be noticeable anyway
+        this.forceUpdate()
       }
     )
   }
   render = () => {
     let {userAddress, loading, invalidError, apiError, tokens,
       txns} = this.state
-    let tkViewerProps = {userAddress, tokens, giftKitty: this.giftKitty}
+    let tkViewerProps = {userAddress, tokens, txns, giftKitty: this.giftKitty}
     return <div>
       Search by User Address:
       <br />
@@ -143,11 +142,18 @@ class App extends Component {
   }
 }
 
-function TokensViewer ({tokens, userAddress, giftKitty}) {
-  return tokens.length > 0
+function tokenTxnFilter (txns) {
+  return (token) => {
+    return !((token.id in txns) && txns[token.id].status != 'failed')
+  }
+}
+
+function TokensViewer ({userAddress, tokens, txns, giftKitty}) {
+  let filtered = tokens.filter(tokenTxnFilter(txns))
+  return filtered.length > 0
     ? <div> Showing tokens for this address:
       <ul>
-        {tokens.map((token) =>
+        {filtered.map((token) =>
           <li key={token.id}>
             {JSON.stringify(token)}
             <br /><br />
@@ -164,14 +170,18 @@ function TokensViewer ({tokens, userAddress, giftKitty}) {
       </ul>
     </div>
     : <span>No tokens available for this address.</span>
+    // ^maybe show a different phrase if pending tokens?
+    // "available" is still an accurate word in any case
 }
 
 function TxnsViewer ({txns}) {
-  return txns.length > 0
+  let txnKeys = Object.keys(txns)
+  return txnKeys.length > 0
     ? <div> Showing transactions for your address:
       <ul>
-        {txns.map(({hash, token, status}) =>
-          <li key={hash}>
+        {txnKeys.map((txnKey) => {
+          let {hash, token, status} = txns[txnKey]
+          return <li key={hash}>
             {JSON.stringify(token)}
             <br /><br />
             {status === 'failed'
@@ -181,7 +191,7 @@ function TxnsViewer ({txns}) {
             : 'This transaction is pending...'}
             <br /><br />
           </li>
-        )}
+        })}
       </ul>
     </div>
     : <span>No transactions available for your address.</span>
