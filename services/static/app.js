@@ -44,6 +44,10 @@ function askForAddress (addr) {
   return to
 }
 
+// initialize localStorage if it doesn't exist
+if (!window.localStorage.getItem('txns')) {
+  window.localStorage.setItem('txns', JSON.stringify([]))
+}
 class App extends Component {
   state = {
     userAddress: web3.eth.accounts[0], // first account is default
@@ -51,7 +55,7 @@ class App extends Component {
     invalidError: false,
     apiError: false,
     tokens: [],
-    txns: []
+    txns: JSON.parse(window.localStorage.getItem('txns'))
   }
   componentDidMount = () => {
     this._handleNewAddress() // get kitties for default account on mount
@@ -96,6 +100,9 @@ class App extends Component {
           alert(err.message)
         }
         console.log(result)
+        // set the new transactions
+        window.localStorage.setItem('txns',
+          JSON.stringify(this.state.txns.concat({hash: result, token})))
         // move the gifted kitty to the transaction list
         // the immutability can probably be made more efficient
         this.setState((state) => ({
