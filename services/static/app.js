@@ -103,11 +103,13 @@ class App extends Component {
         }
         console.log(result)
         // set the new transactions
-        this.state.txns[token.id] = {hash: result, token}
+        let txn = {hash: result, token}
+        this.state.txns[token.id] = txn
         window.localStorage.setItem('txns', JSON.stringify(this.state.txns))
         // yea preferably this should be done with immutability-helper, but
         // we're not using sCU and it won't be noticeable anyway
         this.forceUpdate()
+        this._longPoll(txn)
       }
     )
   }
@@ -140,11 +142,33 @@ class App extends Component {
       </div>}
     </div>
   }
+  _longPoll = (txn) => {
+    web3.eth.getTransactionReceipt(txn.hash, (err, result) => {
+      if (err) {
+        console.error(err)
+        // don't return and just retry
+        // ideally should check what kind of error was given
+      }
+      // null result means pending
+      if (!result) {
+        // ideally should exponential jitter this
+        setTimeout((() => this._longPoll(txn)), 20000) // 20s because sloooow
+        return
+      }
+
+      // transaction has a receipt, so update it!
+      let status = result.status === '0x0' ? 'failure' : 'success'
+      this.state.txns[txn.token.id].status = status
+      this.state.txns[txn.token.id].receipt = result
+      window.localStorage.setItem('txns', JSON.stringify(this.state.txns))
+      this.forceUpdate() // same note about immutability-helper as above
+    })
+  }
 }
 
 function tokenTxnFilter (txns) {
   return (token) => {
-    return !((token.id in txns) && txns[token.id].status != 'failed')
+    return !((token.id in txns) && txns[token.id].status != 'failure')
   }
 }
 
@@ -184,7 +208,7 @@ function TxnsViewer ({txns}) {
           return <li key={hash}>
             {JSON.stringify(token)}
             <br /><br />
-            {status === 'failed'
+            {status === 'failure'
               ? 'This transaction failed'  // maybe add a retry at some point
             : status === 'success'
               ? 'This transaction succeeded!'
