@@ -8,3 +8,5 @@ A blockchain challenge to create:
 Using React for front-end, Node for back-end, Web3 as the API, MetaMask as the front-end provider / node, a provided node for back-end operations, and anything for hosting (even local via ngrok as a valid option)
 
 [View the Services](services/)
+
+[View the Live Demo](https://agilgur5.github.io/cryptokitties_web3_blockchain_challenge/)
