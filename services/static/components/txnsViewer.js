@@ -3,21 +3,29 @@ import React from 'react'
 import Kitty from './kitty.js'
 
 function TxnsViewer ({txns}) {
-  let txnKeys = Object.keys(txns)
-  return txnKeys.length > 0
-    ? <div> Showing transactions for your address:
+  let kittyIds = Object.keys(txns)
+  return kittyIds.length > 0
+    ? <div> Showing transacted tokens for your address:
       <ul>
-        {txnKeys.map((txnKey) => {
-          let {hash, token, status} = txns[txnKey]
-          return <li key={hash}>
-            <Kitty kitty={token} />
-            <br /><br />
-            {status === 'failure'
-              ? 'This transaction failed'  // maybe add a retry at some point
-            : status === 'success'
-              ? 'This transaction succeeded!'
-            : 'This transaction is pending...'}
-            <br /><br />
+        {kittyIds.map((kittyId) => {
+          let txnsForKitty = txns[kittyId]
+          return <li key={kittyId}>
+            <Kitty kitty={txnsForKitty[0].token} />
+            <br />
+            Transactions for this Kitty:
+            <ul>{txnsForKitty.map((txn) => {
+              let {hash, token, status} = txn
+              return <li key={hash}>
+                Transaction: {hash}
+                <br />
+                {status === 'failure'
+                  ? 'This transaction failed'
+                : status === 'success'
+                  ? 'This transaction succeeded!'
+                : 'This transaction is pending...'}
+                <br /><br />
+              </li>
+            })}</ul>
           </li>
         })}
       </ul>

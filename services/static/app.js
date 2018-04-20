@@ -48,14 +48,16 @@ class App extends Component {
     invalidError: false,
     apiError: false,
     tokens: [],
+    // dict of kittyId -> [txnForKitty, txnForKitty2]
+    // txnForKitty = {hash, receipt, status, token, to}
     txns: JSON.parse(window.localStorage.getItem('txns'))
   }
   componentDidMount = () => {
     this._handleNewAddress() // get kitties for default account on mount
     // get status/receipts for any txns that don't have them
-    Object.keys(this.state.txns).filter((tkId) => {
-      return !this.state.txns[tkId].status
-    }).forEach((tkId) => this._longPoll(this.state.txns[tkId]))
+    Object.keys(this.state.txns).forEach((tkId) => {
+      this.state.txns[tkId].filter((txn) => !txn.status).forEach(this._longPoll)
+    })
   }
   _handleNewAddress = () => {
     // default
@@ -100,8 +102,14 @@ class App extends Component {
         }
         console.log(result)
         // set the new transactions
-        let txn = {hash: result, token}
-        this.state.txns[token.id] = txn
+        let txn = {hash: result, token, to}
+        // append to array or create a new array in the state
+        let txnsForKitty = this.state.txns[token.id]
+        if (txnsForKitty) {
+          txnsForKitty.push(txn)
+        } else {
+          this.state.txns[token.id] = [txn]
+        }
         window.localStorage.setItem('txns', JSON.stringify(this.state.txns))
         // yea preferably this should be done with immutability-helper, but
         // we're not using sCU and it won't be noticeable anyway
@@ -157,9 +165,15 @@ class App extends Component {
 
       // transaction has a receipt, so update it!
       let status = result.status === '0x0' ? 'failure' : 'success'
-      this.state.txns[txn.token.id].status = status
-      this.state.txns[txn.token.id].receipt = result
+      txn.status = status
+      txn.receipt = result
       window.localStorage.setItem('txns', JSON.stringify(this.state.txns))
+      // remove from the array if sent to someone else
+      if (result === 'success' && txn.to != web3.eth.accounts[0]) {
+        this.state.tokens = this.state.tokens.filter((tk) => {
+          tk.id != txn.token.id
+        })
+      }
       this.forceUpdate() // same note about immutability-helper as above
     })
   }

@@ -6,7 +6,12 @@ import { getWeb3 } from '../init/web3Interface.js'
 
 function tokenTxnFilter (txns) {
   return (token) => {
-    return !((token.id in txns) && txns[token.id].status != 'failure')
+    // if we don't have a txn for it, view it
+    if (!(token.id in txns)) {
+      return true
+    }
+    // don't view any that have pending txns
+    return !txns[token.id].some(({status}) => !status)
   }
 }
 
