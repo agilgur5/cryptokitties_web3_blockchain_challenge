@@ -28,10 +28,6 @@ Once you have the webserver running, just navigate to the route serving `index.h
   - The account is considered a constant global right now, so if it changes will need to add it to the state (not particularly default)
 - You're not making transactions with the Kitties outside of the app while using it
   - It won't detect those changes, though if it were listening to all events, it could (lots of edge cases for that)
-- The same user / account is always using the app per browser
-  - Since `localStorage` is used to save the transactions, it persists across browser sessions
-    - But that means if you change accounts without clearing the storage, you'll be seeing someone else's transactions
-  - Could store transactions in `localStorage` by user addresss to alleviate this
 - No polyfills are necessary because you're running a new enough browser to be able to run MetaMask and as an Ethereum user, you're probably tech-savvy enough to update your browser regularly (if not have it set to auto-update)
   - Otherwise we'd want to polyfill `Promise`, `fetch`, and `Array.prototype.some` to handle all OS-supported browsers (as an example of "OS-supported", I mean only IE11+ because MSFT / Windows no longer supports lower versions)
 

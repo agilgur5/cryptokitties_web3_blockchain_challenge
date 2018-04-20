@@ -5,6 +5,9 @@ import TokensViewer from './components/tokensViewer.js'
 import TxnsViewer from './components/txnsViewer.js'
 
 import { init, getWeb3, getContractInst } from './init/web3Interface.js'
+import {
+  initLocalStorage, getLocalTransactions, setLocalTransactions
+} from './localStorageInterface.js'
 
 // instantiate web3 and the contract
 init()
@@ -37,10 +40,7 @@ function askForAddress (addr) {
   return to
 }
 
-// initialize localStorage if it doesn't exist
-if (!window.localStorage.getItem('txns')) {
-  window.localStorage.setItem('txns', JSON.stringify({}))
-}
+initLocalStorage()
 class App extends Component {
   state = {
     userAddress: web3.eth.accounts[0], // first account is default
@@ -50,7 +50,7 @@ class App extends Component {
     tokens: [],
     // dict of kittyId -> [txnForKitty, txnForKitty2]
     // txnForKitty = {hash, receipt, status, token, to}
-    txns: JSON.parse(window.localStorage.getItem('txns'))
+    txns: getLocalTransactions()
   }
   componentDidMount = () => {
     this._handleNewAddress() // get kitties for default account on mount
@@ -110,7 +110,7 @@ class App extends Component {
         } else {
           this.state.txns[token.id] = [txn]
         }
-        window.localStorage.setItem('txns', JSON.stringify(this.state.txns))
+        setLocalTransactions(this.state.txns)
         // yea preferably this should be done with immutability-helper, but
         // we're not using sCU and it won't be noticeable anyway
         this.forceUpdate()
@@ -167,7 +167,7 @@ class App extends Component {
       let status = result.status === '0x0' ? 'failure' : 'success'
       txn.status = status
       txn.receipt = result
-      window.localStorage.setItem('txns', JSON.stringify(this.state.txns))
+      setLocalTransactions(this.state.txns)
       // remove from the array if sent to someone else
       if (result === 'success' && txn.to != web3.eth.accounts[0]) {
         this.state.tokens = this.state.tokens.filter((tk) => {
