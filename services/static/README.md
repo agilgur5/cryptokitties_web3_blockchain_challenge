@@ -38,7 +38,7 @@ Once you have the webserver running, just navigate to the route serving `index.h
   - Could get a cached copy of the chain, store it in a more easily parseable way (e.g. in some DB), and write an API to handle that.
     - This would either have to listen to events and update itself or just be stale :/ -- either way, much added complexity
   - The easiest solution seemed to be to just call the unofficial KC API to get a list of tokens for an owner, so ended up going with that
-1. Once established that this project was more free-form (esp. since task 1 can't be done as written, via `tokensOfOwner`), I decided to eschew the back-end entirely as it's not really needed because it merely acts as a session store and a listener
+2. Once established that this project was more free-form (esp. since task 1 can't be done as written, via `tokensOfOwner`), I decided to eschew the back-end entirely as it's not really needed because it merely acts as a session store and a listener
   - If it's just a session store (based on the first two assumptions above), then we don't care about persisting transactions across devices or about viewing others' transactions
   - If it's just a session store, we don't need a back-end, we can store directly in the browser
     - Since we want _persistent_ sessions as if we had a back-end, we just use `localStorage` (for non-persistent could use `sessionStorage`)
@@ -46,7 +46,7 @@ Once you have the webserver running, just navigate to the route serving `index.h
     - Just like with the back-end, if the session restarts (akin to the listener process / thread / server / container restarting), we just:
       - Start listening again after the restart
       - Check if any pending transactions were filled in the offline time (`getTransactionReceipt`)
-1. I decided not to listen to events of the chain, i.e. the KC `Transfer` event, to update the status for a few reasons
+3. I decided not to listen to events of the chain, i.e. the KC `Transfer` event, to update the status for a few reasons
   - We already need to use `getTransactionReceipt` in case of restarts
   - It's not the most efficient use of resources to hold a socket (or sockets) open to listen and filter each incoming event
     - Especially since we know the network is slow and we know there may be lots of volume
